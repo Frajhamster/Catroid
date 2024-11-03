@@ -1,6 +1,6 @@
 /*
  * Catroid: An on-device visual programming system for Android devices
- * Copyright (C) 2010-2022 The Catrobat Team
+ * Copyright (C) 2010-2024 The Catrobat Team
  * (<http://developer.catrobat.org/credits>)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -27,12 +27,15 @@ import android.content.Context;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.util.Pair;
 import android.view.ActionMode;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ListAdapter;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import org.catrobat.catroid.R;
@@ -54,7 +57,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.NonNull;
@@ -66,6 +71,7 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
 import static org.catrobat.catroid.common.SharedPreferenceKeys.SORT_PROJECTS_PREFERENCE_KEY;
+import static org.catrobat.catroid.ui.UiUtils.getAlertDialogAdapterForTextWithIcons;
 
 public abstract class RecyclerViewFragment<T extends Nameable> extends Fragment implements
 		ActionMode.Callback,
@@ -477,19 +483,38 @@ public abstract class RecyclerViewFragment<T extends Nameable> extends Fragment 
 	}
 
 	protected void showBackpackModeChooser() {
-		CharSequence[] items = new CharSequence[] {getString(R.string.pack), getString(R.string.unpack)};
-		new AlertDialog.Builder(requireContext())
-				.setTitle(R.string.backpack_title)
-				.setItems(items, (dialog, which) -> {
-					switch (which) {
-						case 0:
-							startActionMode(BACKPACK);
-							break;
-						case 1:
-							switchToBackpack();
-					}
-				})
-				.show();
+		List<Pair<String, Integer>> items = Arrays.asList(
+				new Pair<>(getString(R.string.pack), R.drawable.ic_login),
+				new Pair<>(getString(R.string.unpack), R.drawable.ic_logout)
+		);
+
+		LayoutInflater inflater = LayoutInflater.from(requireContext());
+		View customDialogView = inflater.inflate(R.layout.dialog_backpack_custom_alert, null);
+		ListAdapter listAdapter = getAlertDialogAdapterForTextWithIcons(requireActivity(),
+				requireContext(), items);
+
+		AlertDialog dialog = new AlertDialog.Builder(requireContext())
+				.setView(customDialogView)
+				.create();
+		Objects.requireNonNull(dialog.getWindow())
+				.setBackgroundDrawableResource(R.drawable.backpack_background_round);
+
+		ListView listView = customDialogView.findViewById(R.id.backpack_item_list);
+		listView.setAdapter(listAdapter);
+		listView.setOnItemClickListener((parent, view, position, id) -> {
+			switch (position) {
+				case 0:
+					startActionMode(BACKPACK);
+					break;
+				case 1:
+					switchToBackpack();
+					break;
+			}
+
+			dialog.dismiss();
+		});
+
+		dialog.show();
 	}
 
 	protected abstract void packItems(List<T> selectedItems);

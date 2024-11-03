@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   ~ Catroid: An on-device visual programming system for Android devices
-  ~ Copyright (C) 2010-2023 The Catrobat Team
+  ~ Copyright (C) 2010-2024 The Catrobat Team
   ~ (<http://developer.catrobat.org/credits>)
   ~
   ~ This program is free software: you can redistribute it and/or modify
@@ -42,6 +42,7 @@
     <color name="advertising_button_background">#00ACC1</color>
     <color name="button_bottom_bar">#00475E</color>
     <color name="button_border_top">#4D7F8F</color>
+    <color name="backpack_background">#424242</color>
 
     <!-- Accent Colors -->
     <color name="accent">#A8DFF4</color>

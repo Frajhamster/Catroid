@@ -1,6 +1,6 @@
 /*
  * Catroid: An on-device visual programming system for Android devices
- * Copyright (C) 2010-2022 The Catrobat Team
+ * Copyright (C) 2010-2024 The Catrobat Team
  * (<http://developer.catrobat.org/credits>)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -26,6 +26,7 @@ package org.catrobat.catroid.ui.recyclerview.backpack;
 import android.content.DialogInterface;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.util.Pair;
 import android.view.ActionMode;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -33,7 +34,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListAdapter;
+import android.widget.ListView;
 import android.widget.PopupMenu;
+import android.widget.TextView;
 
 import org.catrobat.catroid.R;
 import org.catrobat.catroid.ui.UiUtils;
@@ -47,8 +50,10 @@ import org.catrobat.catroid.utils.ToastUtil;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import androidx.annotation.IntDef;
 import androidx.annotation.PluralsRes;
@@ -56,6 +61,8 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
+
+import static org.catrobat.catroid.ui.UiUtils.getAlertDialogAdapterForTextWithIcons;
 
 public abstract class BackpackRecyclerViewFragment<T> extends Fragment implements
 		ActionMode.Callback,
@@ -292,28 +299,41 @@ public abstract class BackpackRecyclerViewFragment<T> extends Fragment implement
 			return;
 		}
 
-		List<Integer> options = new ArrayList<>();
-		options.add(R.string.unpack);
-		options.add(R.string.delete);
-		List<String> names = new ArrayList<>();
-		for (Integer option: options) {
-			names.add(getString(option));
-		}
-		ListAdapter arrayAdapter = UiUtils.getAlertDialogAdapterForMenuIcons(options,
-				names, requireContext(), requireActivity());
+		List<Pair<String, Integer>> items = Arrays.asList(
+				new Pair<>(getString(R.string.unpack), R.drawable.ic_logout),
+				new Pair<>(getString(R.string.delete), R.drawable.ic_delete)
+		);
 
-		new AlertDialog.Builder(requireContext())
-				.setTitle(getItemName(item))
-				.setAdapter(arrayAdapter, (dialog, which) -> {
-					switch (which) {
-						case 0:
-							unpackItems(new ArrayList<>(Collections.singletonList(item)));
-							break;
-						case 1:
-							showDeleteAlert(new ArrayList<>(Collections.singletonList(item)));
-					}
-				})
-				.show();
+		LayoutInflater inflater = LayoutInflater.from(requireContext());
+		View customDialogView = inflater.inflate(R.layout.dialog_backpack_custom_alert, null);
+		ListAdapter listAdapter = getAlertDialogAdapterForTextWithIcons(requireActivity(),
+				requireContext(), items);
+
+		AlertDialog dialog = new AlertDialog.Builder(requireContext())
+				.setView(customDialogView)
+				.create();
+		Objects.requireNonNull(dialog.getWindow())
+				.setBackgroundDrawableResource(R.drawable.backpack_background_round);
+
+		TextView textView = customDialogView.findViewById(R.id.backpack_dialog_title);
+		textView.setText(getItemName(item));
+
+		ListView listView = customDialogView.findViewById(R.id.backpack_item_list);
+		listView.setAdapter(listAdapter);
+		listView.setOnItemClickListener((parent, view, position, id) -> {
+			switch (position) {
+				case 0:
+					unpackItems(new ArrayList<>(Collections.singletonList(item)));
+					break;
+				case 1:
+					showDeleteAlert(new ArrayList<>(Collections.singletonList(item)));
+					break;
+			}
+
+			dialog.dismiss();
+		});
+
+		dialog.show();
 	}
 
 	public void setShowProgressBar(boolean show) {
